@@ -88,18 +88,25 @@ public class CustomerController implements ActionListener {
 	}
 
 	private CustomerDTO initCustomerDTO() {
-		CustomerDTO customerDTO = new CustomerDTO();
 		String customerName = this.customerView.getTxtName().getText();
 		String customerPhone = this.customerView.getTxtPhone().getText();
 		String customerId = this.customerView.getTxtCustomerId().getText();
-
+		
 		int customersDTOListSize = this.customersDTOList.size();
-		if (customersDTOListSize < 0)
-			customerDTO.setId(this.customersDTOList.get(customersDTOListSize - 1).getId() + 1);
-		customerDTO.setName(customerName);
-		customerDTO.setPhone(customerPhone);
-		customerDTO.setCustomerId(customerId);
-
+		boolean hasItemInCustomersDTOList = false;
+		if (customersDTOListSize > 0)
+			hasItemInCustomersDTOList = true;
+			
+		CustomerDTO customerDTO = CustomerDTO.Builder.with($ -> {
+			$.setCustomerId(customerId);
+			$.setName(customerName);
+			$.setPhone(customerPhone);
+		});
+		
+		if(hasItemInCustomersDTOList) {			
+			Long customerNumber = this.customersDTOList.get(customersDTOListSize - 1).getId() + 1;
+			customerDTO.setId(customerNumber);
+		}
 		return customerDTO;
 	}
 

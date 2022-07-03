@@ -2,7 +2,10 @@ package service.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import constant.SystemConstant;
 import model.dto.CustomerDTO;
@@ -61,28 +64,116 @@ public class OrderServiceImpl implements OrderService {
 	}
 
 	@Override
-	public List<OrderEntity> insert(OrderEntity orderDTO, String fileName) {
+	public List<OrderDTO> insert(OrderDTO orderDTO, String fileName) {
+		OrderEntity orderEntity = new OrderEntity();
+		orderEntity.setId(orderDTO.getId());
+		orderEntity.setPrice(orderDTO.getPrice());
+		orderEntity.setProductName(orderDTO.getProductName());
+		orderEntity.setQuantity(orderDTO.getQuantity());
+		orderEntity.setTotal(orderDTO.getTotal());
 		
+		this.ordersEntityList.add(orderEntity);
+		
+		orderRepository.writeToFile(ordersEntityList, fileName);
+		this.ordersDTOList = this.ordersEntityList.stream()
+				.map(item -> OrderDTO.Builder.with(item.getId(), 
+						$ -> {
+							$.setCustomerIdProductIdPair(item.getCustomerIdProductIdPair());
+							$.setPrice(item.getPrice());
+							$.setProductName(item.getProductName());
+							$.setQuantity(item.getQuantity());
+							$.setTotal(item.getTotal());
+						}))
+				.collect(Collectors.toList());
+		
+		return this.ordersDTOList;
+	}
+
+	@Override
+	public List<OrderDTO> findAll(String fileName) {
 		return null;
 	}
 
 	@Override
-	public List<OrderEntity> findAll(String fileName) {
-		return null;
-	}
-
-	@Override
-	public List<OrderEntity> findById(Long id, String fileName) {
+	public List<OrderDTO> findById(Long id, String fileName) {
 		return null;
 	}
 	
 	public List<OrderDTO> convertOrdersEntityListIntoOrdersDTOList(List<OrderEntity> list) {
 		return list.stream()
-				.map(item ->  OrderDTO.OrderDTOBuilder.with(
+				.map(item ->  OrderDTO.Builder.with(
 						item.getId(), $ -> {
 							$.setCustomerIdProductIdPair(item.getCustomerIdProductIdPair());
 							$.setPrice(item.getPrice());
 							$.setProductName(item.getProductName());
+							$.setTotal(item.getTotal());
+						}
+					)
+				)
+				.collect(Collectors.toList());
+	}
+
+	@Override
+	public boolean saveOrdersList(List<OrderDTO> ordersDTOList, final String filename) {
+		/**
+		 * ở đây trong order nó sẽ có customerId và productId -> lấy ra được productId trong product list
+		 * + trong product list sẽ update nó bởi update by id vì list order cũng sẽ có list product trong đó
+		 * 
+		 *  1. Update all object in product list
+		 *  2. save product list
+		 *  3. save order list
+		 *  
+		 *  -- tren UI se get them product list
+		 */
+		
+		// 1. update all object in product 
+		
+		// 1.1 Get all productId in ordersDTOList
+		this.productsDTOList = productService.findAll(SystemConstant.PRODUCT_FILE);
+		List<Long> productNumbersList = ordersDTOList.parallelStream()
+				.map(item -> item.getCustomerIdProductIdPair().getSecondaryValue())
+				.collect(Collectors.toList());
+		// 1.2 Update product list 
+		
+		// Get product number in productsDTOList
+		// ==> Type  Map<100001, ProductDTO>
+		Map<Long, ProductDTO> productNumbersProductsDTOListMap = 
+				this.productsDTOList.parallelStream()
+						.collect(Collectors.toMap(ProductDTO::getId, Function.identity()));
+		
+		// update product by product number list in this.productsDTOList
+		this.productsDTOList = IntStream.range(0, this.productsDTOList.size())
+			.mapToObj(index -> {
+				ProductDTO productDTO = this.productsDTOList.get(index);
+				Long productNumber = productDTO.getId();
+				if(productNumbersProductsDTOListMap.containsKey(productNumber)) {
+					ProductDTO productDTOInMap = productNumbersProductsDTOListMap.get(productNumber);
+					productDTO.setQuantity(productDTOInMap.getQuantity());
+				}
+				return productDTO;
+			})
+			.collect(Collectors.toList());
+		
+		// 1.3 save product list
+		this.productsDTOList = productService.insertList(this.productsDTOList, SystemConstant.PRODUCT_FILE);
+		
+		// 2. save order list
+		orderRepository.writeToFile(this.ordersEntityList, filename);
+//		this.ordersEntityList = orderRepository.readDataFromFile(filename);
+//		this.ordersDTOList = this.convertOrdersEntityIntoOrdersDTO(this.ordersEntityList);
+//		
+		return true;
+	}
+	
+	private List<OrderDTO> convertOrdersEntityIntoOrdersDTO(final List<OrderEntity> list) {
+		return list.stream()
+				.map(item -> OrderDTO.Builder.with(
+						item.getId(),
+						$ -> {
+							$.setCustomerIdProductIdPair(item.getCustomerIdProductIdPair());
+							$.setPrice(item.getPrice());
+							$.setProductName(item.getProductName());
+							$.setQuantity(item.getQuantity());
 							$.setTotal(item.getTotal());
 						}
 					)

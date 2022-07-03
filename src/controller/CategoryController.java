@@ -15,16 +15,13 @@ import service.impl.CategoryServiceImpl;
 import view.CategoryView;
 
 
-// Controller này nó điểu khiển luôn view nên khác tí
 public class CategoryController implements ActionListener {
-
 	private final static CategoryService categoryService = new CategoryServiceImpl();
 	public List<CategoryDTO> categoryDTOList = new ArrayList<CategoryDTO>();
 	private CategoryView categoryView = null;
 
 	public CategoryController(CategoryView categoryView) {
 		this.categoryView =  categoryView;
-		
 		// When you first entered CategoryView, you will get all categories list and render it into table
 		categoryDTOList = this.findAll();
 		if(categoryDTOList.size() > 0 || categoryDTOList != null) 			

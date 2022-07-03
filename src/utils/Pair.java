@@ -6,6 +6,11 @@ public class Pair<K, V> implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private K primaryValue;
 	private V secondaryValue;
+	
+	public Pair(K primaryValue, V secondaryValue) {
+		this.primaryValue = primaryValue;
+		this.secondaryValue = secondaryValue;
+	}
 
 	public K getPrimaryValue() {
 		return primaryValue;

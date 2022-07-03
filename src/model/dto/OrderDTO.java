@@ -9,7 +9,7 @@ public class OrderDTO extends BaseDTO {
 	private Long quantity;
 	private Long total;
 	private String productName;
-	private Pair<Long, Long> CustomerIdProductIdPair; // For rendering view
+	private Pair<Long, Long> customerIdProductIdPair; // For rendering view
 	private static Long sId = 100000L;
 
 	public OrderDTO() {
@@ -17,32 +17,34 @@ public class OrderDTO extends BaseDTO {
 		super.setId(sId);
 	}
 
-	public OrderDTO(OrderDTOBuilder orderDTOBuilder) {
+	public OrderDTO(Builder orderDTOBuilder) {
 		this();
-		orderDTOBuilder.price = price;
-		orderDTOBuilder.quantity = quantity;
-		orderDTOBuilder.total = total;
-		orderDTOBuilder.productName = productName;
+		this.price = orderDTOBuilder.price;
+		this.quantity = orderDTOBuilder.quantity;
+		this.total = orderDTOBuilder.total;
+		this.productName = orderDTOBuilder.productName;
+		this.customerIdProductIdPair = orderDTOBuilder.customerIdProductIdPair;
 	}
 	
 	// Should using builder pattern in this case
-	public OrderDTO(Long id, OrderDTOBuilder orderDTOBuilder) {
+	public OrderDTO(Long id, Builder orderDTOBuilder) {
 		this();
 		super.setId((id != sId) ? id : sId);
-		orderDTOBuilder.price = price;
-		orderDTOBuilder.quantity = quantity;
-		orderDTOBuilder.total = total;
-		orderDTOBuilder.productName = productName;
+		this.price = orderDTOBuilder.price;
+		this.quantity = orderDTOBuilder.quantity;
+		this.total = orderDTOBuilder.total;
+		this.productName = orderDTOBuilder.productName;
+		this.customerIdProductIdPair = orderDTOBuilder.customerIdProductIdPair;
 	}
 	
-	public static class OrderDTOBuilder {
+	public static class Builder {
 		private Long price;
 		private Long quantity;
 		private Long total;
 		private String productName;
-		private Pair<Long, Long> CustomerIdProductIdPair; 
+		private Pair<Long, Long> customerIdProductIdPair; 
 		
-		private OrderDTOBuilder() {}
+		private Builder() {}
 		
 		public OrderDTO build() {
 			return new OrderDTO(this);
@@ -52,14 +54,14 @@ public class OrderDTO extends BaseDTO {
 			return new OrderDTO(id, this);
 		}
 		
-		public static OrderDTO with(Consumer<OrderDTOBuilder> builderConsumer) {
-			OrderDTOBuilder orderDTOBuilder = new OrderDTOBuilder();
+		public static OrderDTO with(Consumer<Builder> builderConsumer) {
+			Builder orderDTOBuilder = new Builder();
 			builderConsumer.accept(orderDTOBuilder);
 			return orderDTOBuilder.build();
 		}
 		
-		public static OrderDTO with(Long id, Consumer<OrderDTOBuilder> builderConsumer) {
-			OrderDTOBuilder orderDTOBuilder = new OrderDTOBuilder();
+		public static OrderDTO with(Long id, Consumer<Builder> builderConsumer) {
+			Builder orderDTOBuilder = new Builder();
 			builderConsumer.accept(orderDTOBuilder);
 			return orderDTOBuilder.build(id);
 		}
@@ -81,8 +83,10 @@ public class OrderDTO extends BaseDTO {
 		}
 
 		public void setCustomerIdProductIdPair(Pair<Long, Long> customerIdProductIdPair) {
-			CustomerIdProductIdPair = customerIdProductIdPair;
+			this.customerIdProductIdPair = customerIdProductIdPair;
 		}
+
+		
 	}
 
 	public static Long getsId() {
@@ -126,11 +130,13 @@ public class OrderDTO extends BaseDTO {
 	}
 
 	public Pair<Long, Long> getCustomerIdProductIdPair() {
-		return CustomerIdProductIdPair;
+		return customerIdProductIdPair;
 	}
 
 	public void setCustomerIdProductIdPair(Pair<Long, Long> customerIdProductIdPair) {
-		CustomerIdProductIdPair = customerIdProductIdPair;
+		this.customerIdProductIdPair = customerIdProductIdPair;
 	}
+
+	
 	
 }

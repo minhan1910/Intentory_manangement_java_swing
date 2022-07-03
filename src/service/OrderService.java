@@ -10,11 +10,11 @@ import model.dto.ProductDTO;
 import repository.entity.OrderEntity;
 
 public interface OrderService {
-	List<OrderEntity> insert(OrderEntity orderDTO, final String fileName);
+	List<OrderDTO> insert(OrderDTO orderDTO, final String fileName);
 
-	List<OrderEntity> findAll(final String fileName);
+	List<OrderDTO> findAll(final String fileName);
 
-	List<OrderEntity> findById(final Long id, final String fileName);
+	List<OrderDTO> findById(final Long id, final String fileName);
 
 	List<ProductDTO> getProductsDTOList();
 
@@ -23,6 +23,8 @@ public interface OrderService {
 	List<CustomerOrderDTO> getCustomersOrdersDTOList();
 
 	List<OrderDTO> getOrdersDTOList();
+	
+	boolean saveOrdersList(List<OrderDTO> ordersDTOList, final String filename);
 	
 //	List<OrderEntity> findByCusomerId(final Long id, final String fileName);
 //

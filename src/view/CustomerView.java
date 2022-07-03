@@ -236,7 +236,6 @@ public class CustomerView extends JFrame implements View<CustomerDTO> {
 
 	@Override
 	public void showData(List<CustomerDTO> list, DefaultTableModel model) {
-//		model.setRowCount(0);
 		model.getDataVector().removeAllElements();
 		model.fireTableChanged(null);
 

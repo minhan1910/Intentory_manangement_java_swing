@@ -3,7 +3,6 @@ package model.dto;
 import java.util.function.Consumer;
 
 public class CustomerDTO extends BaseDTO {
-
 	private String customerId;
 	private String name;
 	private String phone;
@@ -14,36 +13,46 @@ public class CustomerDTO extends BaseDTO {
 		super.setId(sId);
 	}
 	
-	public CustomerDTO(CustomerDTOBuilder customerDTOBuilder) {
-		this();
-		customerDTOBuilder.customerId = customerId;
-		customerDTOBuilder.name = name;
-		customerDTOBuilder.phone = phone;
+	public CustomerDTO(Builder customerDTOBuilder) {
+		super.setId(sId);
+		this.customerId = customerDTOBuilder.customerId;
+		this.name = customerDTOBuilder.name;
+		this.phone = customerDTOBuilder.phone;
 	}
 
-	public CustomerDTO(Long id, CustomerDTOBuilder customerDTOBuilder) {
+	public CustomerDTO(Long id, Builder customerDTOBuilder) {
 		this();
 		super.setId((id != sId) ? id : sId);
-		customerDTOBuilder.customerId = customerId;
-		customerDTOBuilder.name = name;
-		customerDTOBuilder.phone = phone;
+		this.customerId = customerDTOBuilder.customerId;
+		this.name = customerDTOBuilder.name;
+		this.phone = customerDTOBuilder.phone;
 	}
 	
-	public static class CustomerDTOBuilder {
+	public static class Builder {
 		private String customerId;
 		private String name;
 		private String phone;
 		
-		private CustomerDTOBuilder() {}
+		private Builder() {}
 		
 		public CustomerDTO build() {
 			return new CustomerDTO(this);
 		}
 		
-		public static CustomerDTO with(Consumer<CustomerDTOBuilder> builderConsumer) {
-			CustomerDTOBuilder customerDTOBuilder = new CustomerDTOBuilder();
+		public CustomerDTO build(Long id) {
+			return new CustomerDTO(id, this);
+		}
+		
+		public static CustomerDTO with(Consumer<Builder> builderConsumer) {
+			Builder customerDTOBuilder = new Builder();
 			builderConsumer.accept(customerDTOBuilder);
 			return customerDTOBuilder.build();
+		}
+		
+		public static CustomerDTO with(Long id, Consumer<Builder> builderConsumer) {
+			Builder customerDTOBuilder = new Builder();
+			builderConsumer.accept(customerDTOBuilder);
+			return customerDTOBuilder.build(id);
 		}
 		
 		public void setCustomerId(String customerId) {

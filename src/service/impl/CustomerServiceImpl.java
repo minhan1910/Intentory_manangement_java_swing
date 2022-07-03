@@ -35,7 +35,11 @@ public class CustomerServiceImpl implements CustomerService {
 	public List<CustomerDTO> findAll(String fileName) {
 		this.customersEntityList = customerRepository.readDataFromFile(fileName);
 		this.customersDTOList = this.customersEntityList.stream()
-				.map(item -> new CustomerDTO(item.getId(), item.getCustomerId(), item.getName(), item.getPhone()))
+				.map(item -> CustomerDTO.Builder.with(item.getId(), $ -> {
+					$.setCustomerId(item.getCustomerId());
+					$.setName(item.getName());
+					$.setPhone(item.getPhone());
+				}))
 				.collect(Collectors.toList());
 		return this.customersDTOList;
 	}
@@ -157,14 +161,11 @@ public class CustomerServiceImpl implements CustomerService {
 	
 	private List<CustomerDTO> convertCustomersEntityListIntoCustomersDTOList(final List<CustomerEntity> list) {
 		return list.stream()
-				.map(item -> {
-					CustomerDTO customerDTO = new CustomerDTO();
-					customerDTO.setId(item.getId());
-					customerDTO.setCustomerId(item.getCustomerId());
-					customerDTO.setName(item.getName());
-					customerDTO.setPhone(item.getPhone());
-					return customerDTO;
-				})
+				.map(item -> CustomerDTO.Builder.with(item.getId(), $ -> {
+					$.setCustomerId(item.getCustomerId());
+					$.setName(item.getName());
+					$.setPhone(item.getPhone()); 
+				}))
 				.collect(Collectors.toList());
 	}
 

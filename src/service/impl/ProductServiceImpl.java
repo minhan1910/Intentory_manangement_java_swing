@@ -45,6 +45,15 @@ public class ProductServiceImpl implements ProductService {
 
 		return this.convertProductsEntityListIntoProductsDTOList(productsEntityList);
 	}
+	
+
+	@Override
+	public List<ProductDTO> insertList(List<ProductDTO> list, String fileName) {
+		this.productsEntityList = convertProductsDTOListIntoProductsEntityList(list);
+		productRepository.writeToFile(this.productsEntityList, fileName);
+		this.productsEntityList = productRepository.readDataFromFile(fileName);
+		return this.convertProductsEntityListIntoProductsDTOList(this.productsEntityList);
+	}
 
 	@Override
 	public List<CategoryDTO> getAllCategory(final String fileName) {
@@ -178,5 +187,6 @@ public class ProductServiceImpl implements ProductService {
 	private boolean isProductFieldIdentical(final String primaryField, final String secondField) {
 		return primaryField.equalsIgnoreCase(secondField);
 	}
+
 
 }

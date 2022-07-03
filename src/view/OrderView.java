@@ -13,6 +13,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -23,9 +24,11 @@ import model.dto.CustomerDTO;
 import model.dto.CustomerOrderDTO;
 import model.dto.OrderDTO;
 import model.dto.ProductDTO;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class OrderView extends JFrame {
-
+	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
 	private JTable customerTable;
 	private JTable productTable;
@@ -33,31 +36,37 @@ public class OrderView extends JFrame {
 	private JTextField txtOrderPrice;
 	private JTextField txtOrderQuantity;
 	private JTable orderTable;
-	private List<OrderDTO> ordersDTOList 				= new ArrayList<>();
-	private List<ProductDTO> productsDTOList 			= new ArrayList<>();
-	private List<CustomerDTO> customersDTOList 			= new ArrayList<>();
-	private List<CustomerOrderDTO> customersOrdersList 	= new ArrayList<>();
+	private List<OrderDTO> ordersDTOListReal 				= new ArrayList<>(); // for saving file
+	private List<OrderDTO> ordersDTOListTemp 				= new ArrayList<>(); // for rendering file
+	private List<ProductDTO> productsDTOList 				= new ArrayList<>();
+	private List<CustomerDTO> customersDTOList 				= new ArrayList<>();
+	private List<CustomerOrderDTO> customersOrdersList 		= new ArrayList<>();
 	private DefaultTableModel orderModel;
 	private DefaultTableModel customerModel;
 	private DefaultTableModel productModel;
 	private CustomerDTO customerDTORowSelected;
 	private ProductDTO productDTORowSelected;
+	private int isCustomerDTORowSelected = -1;
+	private int isProductDTORowSelected = -1;
+	
+	// Order Action Listener
+	private final OrderController orderAction = new OrderController(this);
 
 	/**
 	 * Launch the application.
 	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					OrderView frame = new OrderView();
-					frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
+//	public static void main(String[] args) {
+//		EventQueue.invokeLater(new Runnable() {
+//			public void run() {
+//				try {
+//					OrderView frame = new OrderView();
+//					frame.setVisible(true);
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//				}
+//			}
+//		});
+//	}
 
 	/**
 	 * Create the frame.
@@ -71,25 +80,38 @@ public class OrderView extends JFrame {
 		this.initProductDatas();
 		
 		
-		
+//		this.customerTableAddMouseListener();
+//		this.productTableAddMouseListener();
 		
 		this.setUndecorated(true);
 		this.setLocationRelativeTo(null);
 	}
 	
 	private void customerTableAddMouseListener() {
-		this.customerTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+		ListSelectionModel model = this.customerTable.getSelectionModel();
+		model.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		model.addListSelectionListener(new ListSelectionListener() {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
 				int firstIndex = e.getFirstIndex();
 				if(!e.getValueIsAdjusting()) { //prevent dupliacted event	
 					if (firstIndex >= 0 && firstIndex < customerModel.getRowCount()) { // for Refresh
 						int i_row = customerTable.getSelectedRow();
+						orderAction.setIsCustomerDTORowSelected(i_row);
 						String idSelectedRow	= customerModel.getValueAt(i_row, 0).toString();
 						String customerName 	= customerModel.getValueAt(i_row, 1).toString();
 						String customerPhone 	= customerModel.getValueAt(i_row, 2).toString();
 						
-						customerDTORowSelected = new CustomerDTO();
+						Long idSelectedRowL 	= Long.parseLong(idSelectedRow);
+						customerDTORowSelected = CustomerDTO.Builder.with(
+								idSelectedRowL,
+								$ -> {
+									// Not customer id
+									$.setCustomerId(customerPhone);
+									$.setName(customerName);
+								}
+						);
+						
 					} 
 				}
 			}
@@ -97,20 +119,38 @@ public class OrderView extends JFrame {
 	}
 	
 	private void productTableAddMouseListener() {
-		this.productTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+		ListSelectionModel model = this.productTable.getSelectionModel();
+		model.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		
+		model.addListSelectionListener(new ListSelectionListener() {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
 				int firstIndex = e.getFirstIndex();
 				if(!e.getValueIsAdjusting()) { //prevent dupliacted event	
 					if (firstIndex >= 0 && firstIndex < productModel.getRowCount()) { // for Refresh
 						int i_row = productTable.getSelectedRow();
+						orderAction.setIsProductDTORowSelected(i_row);
 //						"PRODID", "PRODNAME", "PRODQTY", "PRODDESC", "PRODCAT"
 						String idSelectedRow		= productModel.getValueAt(i_row, 0).toString();
 						String productName 			= productModel.getValueAt(i_row, 1).toString();
 						String productQuantity 		= productModel.getValueAt(i_row, 2).toString();
 						String productDesc 			= productModel.getValueAt(i_row, 3).toString();
 						String productCategoryName 	= productModel.getValueAt(i_row, 4).toString();
+						Long idSelectedRowL			= Long.parseLong(idSelectedRow);
+						Long productQuantityL		= Long.parseLong(productQuantity);
+						productDTORowSelected = ProductDTO.Builder.with(
+								idSelectedRowL,
+								$ -> {
+									$.setName(productName);
+									$.setDescription(productDesc);
+									$.setQuantity(productQuantityL);
+									$.setCategoryName(productCategoryName);
+								}
+						);
 					} 
+				} else {
+//					model.clearSelection();
+					System.out.println("132");
 				}
 			}
 		});
@@ -125,10 +165,10 @@ public class OrderView extends JFrame {
 	}
 	
 	public void initOrderDatas() {
-		this.showData(this.ordersDTOList, this.orderModel);
+		this.showData(this.ordersDTOListTemp, this.orderModel);
 	}
 	
-	<T> void showData(List<T> list, DefaultTableModel model) {
+	public <T> void showData(List<T> list, DefaultTableModel model) {
 		model.getDataVector().removeAllElements();
 		model.fireTableChanged(null);
 		
@@ -164,8 +204,7 @@ public class OrderView extends JFrame {
 	
 	private void initComponents() {
 		
-		// Order Action Listener
-		OrderController orderAction = new OrderController(this);
+		
 		
 		contentPane = new JPanel();
 		contentPane.setBackground(Color.WHITE);
@@ -198,6 +237,27 @@ public class OrderView extends JFrame {
 		panel.add(lblClose);
 		
 		customerTable = new JTable();
+		customerTable.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				int i_row = customerTable.getSelectedRow();
+				System.out.println(i_row);
+				orderAction.setIsCustomerDTORowSelected(i_row);
+				String idSelectedRow	= customerModel.getValueAt(i_row, 0).toString();
+				String customerName 	= customerModel.getValueAt(i_row, 1).toString();
+				String customerPhone 	= customerModel.getValueAt(i_row, 2).toString();
+				
+				Long idSelectedRowL 	= Long.parseLong(idSelectedRow);
+				customerDTORowSelected = CustomerDTO.Builder.with(
+						idSelectedRowL,
+						$ -> {
+							// Not customer id
+							$.setCustomerId(customerPhone);
+							$.setName(customerName);
+						}
+				);
+			}
+		});
 		customerTable.setModel(new DefaultTableModel(
 			new Object[][] {
 			},
@@ -205,7 +265,10 @@ public class OrderView extends JFrame {
 				"CUSTID", "CUSTNAME", "CUSTPHONE"
 			}
 		));
+		
 		this.customerModel = (DefaultTableModel) this.customerTable.getModel();
+		ListSelectionModel model = this.customerTable.getSelectionModel();
+		model.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		JScrollPane scrollPane = new JScrollPane(customerTable);
 		scrollPane.setBounds(36, 199, 459, 215);
 		contentPane.add(scrollPane);
@@ -217,6 +280,30 @@ public class OrderView extends JFrame {
 		contentPane.add(lblNewLabel_1_1_2);
 		
 		productTable = new JTable();
+		productTable.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				int i_row = productTable.getSelectedRow();
+				orderAction.setIsProductDTORowSelected(i_row);
+//				"PRODID", "PRODNAME", "PRODQTY", "PRODDESC", "PRODCAT"
+				String idSelectedRow		= productModel.getValueAt(i_row, 0).toString();
+				String productName 			= productModel.getValueAt(i_row, 1).toString();
+				String productQuantity 		= productModel.getValueAt(i_row, 2).toString();
+				String productDesc 			= productModel.getValueAt(i_row, 3).toString();
+				String productCategoryName 	= productModel.getValueAt(i_row, 4).toString();
+				Long idSelectedRowL			= Long.parseLong(idSelectedRow);
+				Long productQuantityL		= Long.parseLong(productQuantity);
+				productDTORowSelected = ProductDTO.Builder.with(
+						idSelectedRowL,
+						$ -> {
+							$.setName(productName);
+							$.setDescription(productDesc);
+							$.setQuantity(productQuantityL);
+							$.setCategoryName(productCategoryName);
+						}
+				);
+			}
+		});
 		productTable.setModel(new DefaultTableModel(
 			new Object[][] {
 			},
@@ -225,7 +312,9 @@ public class OrderView extends JFrame {
 			}
 		));
 		this.productModel = (DefaultTableModel) this.productTable.getModel();
+
 		JScrollPane scrollPane_1 = new JScrollPane(productTable);
+
 		scrollPane_1.setBounds(614, 199, 559, 215);
 		contentPane.add(scrollPane_1);
 		
@@ -409,14 +498,6 @@ public class OrderView extends JFrame {
 		this.orderTable = table_2;
 	}
 
-	public List<OrderDTO> getOrdersDTOList() {
-		return ordersDTOList;
-	}
-
-	public void setOrdersDTOList(List<OrderDTO> ordersDTOList) {
-		this.ordersDTOList = ordersDTOList;
-	}
-
 	public List<ProductDTO> getProductsDTOList() {
 		return productsDTOList;
 	}
@@ -439,6 +520,102 @@ public class OrderView extends JFrame {
 
 	public void setCustomersOrdersList(List<CustomerOrderDTO> customersOrdersList) {
 		this.customersOrdersList = customersOrdersList;
+	}
+
+	public JTable getCustomerTable() {
+		return customerTable;
+	}
+
+	public void setCustomerTable(JTable customerTable) {
+		this.customerTable = customerTable;
+	}
+
+	public JTable getProductTable() {
+		return productTable;
+	}
+
+	public void setProductTable(JTable productTable) {
+		this.productTable = productTable;
+	}
+
+	public JTable getOrderTable() {
+		return orderTable;
+	}
+
+	public void setOrderTable(JTable orderTable) {
+		this.orderTable = orderTable;
+	}
+
+	public DefaultTableModel getOrderModel() {
+		return orderModel;
+	}
+
+	public void setOrderModel(DefaultTableModel orderModel) {
+		this.orderModel = orderModel;
+	}
+
+	public DefaultTableModel getCustomerModel() {
+		return customerModel;
+	}
+
+	public void setCustomerModel(DefaultTableModel customerModel) {
+		this.customerModel = customerModel;
+	}
+
+	public DefaultTableModel getProductModel() {
+		return productModel;
+	}
+
+	public void setProductModel(DefaultTableModel productModel) {
+		this.productModel = productModel;
+	}
+
+	public CustomerDTO getCustomerDTORowSelected() {
+		return customerDTORowSelected;
+	}
+
+	public void setCustomerDTORowSelected(CustomerDTO customerDTORowSelected) {
+		this.customerDTORowSelected = customerDTORowSelected;
+	}
+
+	public ProductDTO getProductDTORowSelected() {
+		return productDTORowSelected;
+	}
+
+	public void setProductDTORowSelected(ProductDTO productDTORowSelected) {
+		this.productDTORowSelected = productDTORowSelected;
+	}
+
+	public int getIsCustomerDTORowSelected() {
+		return isCustomerDTORowSelected;
+	}
+
+	public void setIsCustomerDTORowSelected(int isCustomerDTORowSelected) {
+		this.isCustomerDTORowSelected = isCustomerDTORowSelected;
+	}
+
+	public int getIsProductDTORowSelected() {
+		return isProductDTORowSelected;
+	}
+
+	public void setIsProductDTORowSelected(int isProductDTORowSelected) {
+		this.isProductDTORowSelected = isProductDTORowSelected;
+	}
+
+	public List<OrderDTO> getOrdersDTOListReal() {
+		return ordersDTOListReal;
+	}
+
+	public void setOrdersDTOListReal(List<OrderDTO> ordersDTOListReal) {
+		this.ordersDTOListReal = ordersDTOListReal;
+	}
+
+	public List<OrderDTO> getOrdersDTOListTemp() {
+		return ordersDTOListTemp;
+	}
+
+	public void setOrdersDTOListTemp(List<OrderDTO> ordersDTOListTemp) {
+		this.ordersDTOListTemp = ordersDTOListTemp;
 	}
 	
 	

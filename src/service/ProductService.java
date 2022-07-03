@@ -17,4 +17,6 @@ public interface ProductService {
 	List<ProductDTO> deleteById(ProductDTO productDTO, final String fileName);
 	
 	List<CategoryDTO> getAllCategory(final String fileName);
+	
+	List<ProductDTO> insertList(List<ProductDTO> list, final String fileName);
 }
